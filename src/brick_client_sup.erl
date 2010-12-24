@@ -28,8 +28,6 @@
 %% </ul>
 
 -module(brick_client_sup).
--include("applog.hrl").
-
 
 -behaviour(supervisor).
 

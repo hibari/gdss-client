@@ -27,8 +27,8 @@
 %% to which to send the op.
 
 -module(brick_simple).
--include("applog.hrl").
 
+-include("gmt_elog.hrl").
 
 -behaviour(gen_server).
 
@@ -627,9 +627,8 @@ handle_call({get_gh, Tab}, _From, State) ->
     {reply, Reply, State};
 handle_call({set_gh, Tab, NewGH}, _From, State) ->
     ?DBG_CHAINx({simple_set_gh, node(), NewGH}),
-    ?APPLOG_INFO(?APPLOG_APPM_107,
-                 "brick_simple(set_gh): minor_rev=~p\n",
-                 [NewGH#g_hash_r.minor_rev]),
+    ?ELOG_INFO("brick_simple(set_gh): minor_rev=~p",
+               [NewGH#g_hash_r.minor_rev]),
     %% TODO any sanity checking of the NewGH?
     %% TODO do anything different if Tab is already there?  If not there?
     case dict:find(Tab, State#state.gh_dict) of
@@ -640,18 +639,12 @@ handle_call({set_gh, Tab, NewGH}, _From, State) ->
                true ->
                     NewT = T#tab_gh_r{gh = NewGH},
                     NewD = dict:store(Tab, NewT, State#state.gh_dict),
-                    %%              error_logger:info_msg(
-                    %%                "SSi: node ~w tab ~w: minor_rev = ~w\n",
-                    %%                [node(), Tab, NewGH#g_hash_r.minor_rev]),
                     {reply, ok, State#state{gh_dict = NewD}}
             end;
         error ->
             %% Almost Cut-and-paste....
             NewT = #tab_gh_r{gh = NewGH},
             NewD = dict:store(Tab, NewT, State#state.gh_dict),
-            %%      error_logger:info_msg(
-            %%        "SSi: node ~w tab ~w: minor_rev = ~w\n",
-            %%        [node(), Tab, NewGH#g_hash_r.minor_rev]),
             {reply, ok, State#state{gh_dict = NewD}}
     end;
 handle_call({unset_gh, Tab}, _From, State) ->

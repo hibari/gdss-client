@@ -21,8 +21,6 @@
 %% supervisor.
 
 -module(brick_client).
--include("applog.hrl").
-
 
 -behaviour(application).
 
@@ -41,13 +39,9 @@
 %%          {error, Reason}
 %%----------------------------------------------------------------------
 start() ->
-    start(xxxwhocares, []).
+    start(normal, []).
 
 start(_Type, StartArgs) ->
-    %% Set up GMT custom error handler, shutdown on error handler exception.
-    gmt_event_h:start_singleton_report_handler(brick_client, generic, []),
-    gmt_event_h:add_exception_fun(fun(_Err) -> application:stop(gdss_client) end),
-
     gmt_cinfo_basic:register(),
     brick_cinfo:register(),
 

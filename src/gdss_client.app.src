@@ -29,6 +29,6 @@
   {modules, [brick_client, brick_client_sup
              , brick_client_data_sup
              , brick_simple
-            ]}
- ]
-}.
+            ]},
+  {env, []}
+ ]}.

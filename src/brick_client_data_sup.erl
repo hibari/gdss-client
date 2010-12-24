@@ -20,8 +20,6 @@
 %% @doc The supervisor for all brick client non-admin functions.
 
 -module(brick_client_data_sup).
--include("applog.hrl").
-
 
 -include("gmt_hlog.hrl").
 
