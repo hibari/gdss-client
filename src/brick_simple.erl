@@ -82,9 +82,9 @@
 -spec add(table_name(), key(), val()) -> do1_res().
 -spec add(table_name(), key(), val(), flags_list() | timeout()) -> do1_res().
 -spec add(table_name(), key(), val(), exp_time(), flags_list(), timeout()) -> do1_res().
--spec replace(table_name(), key(), val()) -> do1_res().
--spec replace(table_name(), key(), val(), flags_list() | timeout()) -> do1_res().
--spec replace(table_name(), key(), val() | ?VALUE_REMAINS_CONSTANT, exp_time(), flags_list(), timeout()) -> do1_res().
+-spec replace(table_name(), key(), val_impl()) -> do1_res().
+-spec replace(table_name(), key(), val_impl(), flags_list() | timeout()) -> do1_res().
+-spec replace(table_name(), key(), val_impl(), exp_time(), flags_list(), timeout()) -> do1_res().
 -spec set(table_name(), key(), val()) -> do1_res().
 -spec set(table_name(), key(), val(), flags_list() | timeout()) -> do1_res().
 -spec set(table_name(), key(), val(), exp_time(), flags_list(), timeout()) -> do1_res().
