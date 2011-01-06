@@ -24,7 +24,7 @@
   {description, "Gemini Distributed Storage Service, Client"},
   {vsn, "0.1.0"},
   {registered, []},
-  {applications, [kernel, stdlib, sasl, crypto]},
+  {applications, [kernel, stdlib, sasl]},
   {mod, {brick_client, []}},
   {modules, [brick_client, brick_client_sup
              , brick_client_data_sup
