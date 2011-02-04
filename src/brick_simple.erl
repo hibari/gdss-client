@@ -54,8 +54,9 @@
 
 %% API for "simple" brick API
 -export([add/3, add/4, add/6, replace/3, replace/4, replace/6,
-         set/3, set/4, set/6, get/2, get/3, get/4,
-         delete/2, delete/3, delete/4, update/3, append/3,
+         set/3, set/4, set/6, rename/3, rename/4, rename/6,
+         get/2, get/3, get/4,
+         delete/2, delete/3, delete/4,
          get_many/3, get_many/4, get_many/5,
          do/2, do/3, do/4]).
 -export([fold_table/5, fold_table/6, fold_table/7,
@@ -88,6 +89,9 @@
 -spec set(table_name(), key(), val()) -> do1_res().
 -spec set(table_name(), key(), val(), flags_list() | timeout()) -> do1_res().
 -spec set(table_name(), key(), val(), exp_time(), flags_list(), timeout()) -> do1_res().
+-spec rename(table_name(), key(), key()) -> do1_res().
+-spec rename(table_name(), key(), key(), flags_list() | timeout()) -> do1_res().
+-spec rename(table_name(), key(), key(), exp_time(), flags_list(), timeout()) -> do1_res().
 -spec get(table_name(), key()) -> do1_res().
 -spec get(table_name(), key(), flags_list() | timeout()) -> do1_res().
 -spec get(table_name(), key(), flags_list(), timeout()) -> do1_res().
@@ -188,6 +192,38 @@ set(Tab, Key, Value, ExpTime, Flags, Timeout) ->
         Else  -> Else
     end.
 
+%% @spec (atom(), io_list(), io_list())
+%%    -> zzz_add_reply()
+%% @equiv rename(Tab, Key, OldKey, 0, [], DefaultTimeout)
+%% @doc Rename a OldKey/Value pair to Key/Value pair in a brick,
+%% failing if OldKey does not already exist or if Key already exists.
+
+rename(Tab, Key, OldKey) ->
+    rename(Tab, Key, OldKey, 0, [], ?FOO_TIMEOUT).
+
+%% @spec (atom(), io_list(), io_list(), prop_list() | timeout())
+%%    -> zzz_add_reply()
+%% @equiv rename(Tab, Key, OldKey, 0, Flags, DefaultTimeoutOrFlags)
+%% @doc Rename a OldKey/Value pair to Key/Value pair in a brick,
+%% failing if OldKey does not already exist or if Key already exists.
+
+rename(Tab, Key, OldKey, Flags) when is_list(Flags) ->
+    rename(Tab, Key, OldKey, 0, Flags, ?FOO_TIMEOUT);
+rename(Tab, Key, OldKey, Timeout) when is_integer(Timeout); Timeout == infinity ->
+    rename(Tab, Key, OldKey, 0, [], Timeout).
+
+%% @spec (atom(), io_list(), io_list(), integer(), prop_list(), timeout())
+%%    -> zzz_add_reply()
+%% @doc Rename a OldKey/Value pair to Key/Value pair in a brick,
+%% failing if OldKey does not already exist or if Key already exists.
+
+rename(Tab, Key, OldKey, ExpTime, Flags, Timeout) ->
+    case do(Tab,[brick_server:make_rename(Key, OldKey, ExpTime, Flags)],
+              Timeout) of
+        [Res] -> Res;
+        Else  -> Else
+    end.
+
 %% @spec (atom(), io_list())
 %%    -> zzz_get_reply()
 %% @equiv get(Tab, Key, [], DefaultTimeout)
@@ -240,25 +276,6 @@ delete(Tab, Key, Timeout) when is_integer(Timeout); Timeout == infinity ->
 
 delete(Tab, Key, Flags, Timeout) ->
     case do(Tab, [brick_server:make_delete(Key, Flags)], Timeout) of
-        [Res] -> Res;
-        Else  -> Else
-    end.
-
-%% @doc Delete this function, it's unused I think.
-
-update(Tab, Key, Opts) ->
-    {ok, Ts, Value} = get(Tab, Key),
-    case do(Tab, [brick_server:make_op6(set, Key, Ts + 1, Value, 0, Opts)], ?FOO_TIMEOUT) of
-        [Res] -> Res;
-        Else  -> Else
-    end.
-
-%% @doc Delete this function, it's unused I think.
-
-append(Tab, Key, Val) ->
-    {ok, Ts, OldVal} = get(Tab, Key),
-    NewVal = list_to_binary([binary_to_list(OldVal) | binary_to_list(Val)]),
-    case do(Tab, [brick_server:make_op6(set, Key, Ts + 1, NewVal, 0, [])], ?FOO_TIMEOUT) of
         [Res] -> Res;
         Else  -> Else
     end.
