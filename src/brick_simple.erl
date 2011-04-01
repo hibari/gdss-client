@@ -120,7 +120,7 @@ add(Tab, Key, Value) ->
 
 add(Tab, Key, Value, Flags) when is_list(Flags) ->
     add(Tab, Key, Value, 0, Flags, ?FOO_TIMEOUT);
-add(Tab, Key, Value, Timeout) when is_integer(Timeout); Timeout == infinity ->
+add(Tab, Key, Value, Timeout) when is_integer(Timeout) ->
     add(Tab, Key, Value, 0, [], Timeout).
 
 %% @spec (atom(), io_list(), io_list(), integer(), prop_list(), timeout())
@@ -149,7 +149,7 @@ replace(Tab, Key, Value) ->
 
 replace(Tab, Key, Value, Flags) when is_list(Flags) ->
     replace(Tab, Key, Value, 0, Flags, ?FOO_TIMEOUT);
-replace(Tab, Key, Value, Timeout) when is_integer(Timeout); Timeout == infinity ->
+replace(Tab, Key, Value, Timeout) when is_integer(Timeout) ->
     replace(Tab, Key, Value, 0, [], Timeout).
 
 %% @spec (atom(), io_list(), io_list(), integer(), prop_list(), timeout())
@@ -158,7 +158,7 @@ replace(Tab, Key, Value, Timeout) when is_integer(Timeout); Timeout == infinity 
 
 replace(Tab, Key, Value, ExpTime, Flags, Timeout) ->
     case do(Tab,[brick_server:make_replace(Key, Value, ExpTime, Flags)],
-              Timeout) of
+            Timeout) of
         [Res] -> Res;
         Else  -> Else
     end.
@@ -178,7 +178,7 @@ set(Tab, Key, Value) ->
 
 set(Tab, Key, Value, Flags) when is_list(Flags) ->
     set(Tab, Key, Value, 0, Flags, ?FOO_TIMEOUT);
-set(Tab, Key, Value, Timeout) when is_integer(Timeout); Timeout == infinity ->
+set(Tab, Key, Value, Timeout) when is_integer(Timeout) ->
     set(Tab, Key, Value, 0, [], Timeout).
 
 %% @spec (atom(), io_list(), io_list(), integer(), prop_list(), timeout())
@@ -209,7 +209,7 @@ rename(Tab, Key, OldKey) ->
 
 rename(Tab, Key, OldKey, Flags) when is_list(Flags) ->
     rename(Tab, Key, OldKey, 0, Flags, ?FOO_TIMEOUT);
-rename(Tab, Key, OldKey, Timeout) when is_integer(Timeout); Timeout == infinity ->
+rename(Tab, Key, OldKey, Timeout) when is_integer(Timeout) ->
     rename(Tab, Key, OldKey, 0, [], Timeout).
 
 %% @spec (atom(), io_list(), io_list(), integer(), prop_list(), timeout())
@@ -219,7 +219,7 @@ rename(Tab, Key, OldKey, Timeout) when is_integer(Timeout); Timeout == infinity 
 
 rename(Tab, Key, OldKey, ExpTime, Flags, Timeout) ->
     case do(Tab,[brick_server:make_rename(Key, OldKey, ExpTime, Flags)],
-              Timeout) of
+            Timeout) of
         [Res] -> Res;
         Else  -> Else
     end.
@@ -239,7 +239,7 @@ get(Tab, Key) ->
 
 get(Tab, Key, Flags) when is_list(Flags) ->
     get(Tab, Key, Flags, ?FOO_TIMEOUT);
-get(Tab, Key, Timeout) when is_integer(Timeout); Timeout == infinity ->
+get(Tab, Key, Timeout) when is_integer(Timeout) ->
     get(Tab, Key, [], Timeout).
 
 %% @spec (atom(), io_list(), prop_list(), timeout())
@@ -267,7 +267,7 @@ delete(Tab, Key) ->
 
 delete(Tab, Key, Flags) when is_list(Flags) ->
     delete(Tab, Key, Flags, ?FOO_TIMEOUT);
-delete(Tab, Key, Timeout) when is_integer(Timeout); Timeout == infinity ->
+delete(Tab, Key, Timeout) when is_integer(Timeout) ->
     delete(Tab, Key, [], Timeout).
 
 %% @spec (atom(), io_list(), prop_list(), timeout())
@@ -307,7 +307,7 @@ get_many(Tab, Key, MaxNum) when is_integer(MaxNum) ->
 
 get_many(Tab, Key, MaxNum, Flags) when is_list(Flags) ->
     get_many(Tab, Key, MaxNum, Flags, ?FOO_TIMEOUT);
-get_many(Tab, Key, MaxNum, Timeout) when is_integer(Timeout); Timeout == infinity ->
+get_many(Tab, Key, MaxNum, Timeout) when is_integer(Timeout) ->
     get_many(Tab, Key, MaxNum, [], Timeout).
 
 %% @spec (atom(), io_list(), integer(), prop_list(), timeout())
@@ -324,7 +324,7 @@ fold_table(Tab, Fun, Acc, NumItems, Flags) ->
     fold_table(Tab, Fun, Acc, NumItems, Flags, 0).
 
 fold_table(Tab, Fun, Acc, NumItems, Flags, MaxParallel) ->
-    fold_table(Tab, Fun, Acc, NumItems, Flags, MaxParallel, 5*1000).  %% @TODO: why not ?FOO_TIMEOUT
+    fold_table(Tab, Fun, Acc, NumItems, Flags, MaxParallel, ?FOO_TIMEOUT).
 
 %% @spec (atom(), fun_arity_2(), term(), integer(), proplist(), integer(), integer()) ->
 %%       term() | {term(), integer(), integer(), integer()}
@@ -384,7 +384,7 @@ fold_key_prefix(Tab, Prefix, Fun, Acc, Flags) ->
     fold_key_prefix(Tab, PreBin, PreBin, Fun, Acc, Flags, 100, 0, ?FOO_TIMEOUT).
 
 %% @spec (atom(), binary(), binary(), fun_arity_2(), term(), proplist(),
-%%        integer(), integer(), integer() | infinity)
+%%        integer(), integer(), integer())
 %%    -> {ok, term(), integer()} | {error, term(), term()}
 %%
 %% @doc Convenience function: For a binary prefix `Prefix', fold over all keys
@@ -465,7 +465,7 @@ do(Tab, OpList) ->
 %% @doc Send a list of do ops to a brick.
 
 do(Tab, OpList, Timeout)
-  when is_list(OpList), (is_integer(Timeout) orelse Timeout == infinity) ->
+  when is_list(OpList), is_integer(Timeout) ->
     do(Tab, OpList, [], Timeout).
 
 %% @spec (atom(), do_list(), prop_list(), timeout())
