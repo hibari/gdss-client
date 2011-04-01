@@ -22,13 +22,14 @@
 {application, gdss_client,
  [
   {description, "Gemini Distributed Storage Service, Client"},
-  {vsn, "0.1.0"},
+  {vsn, "0.1.1"},
   {registered, []},
   {applications, [kernel, stdlib, sasl]},
   {mod, {brick_client, []}},
   {modules, [brick_client, brick_client_sup
              , brick_client_data_sup
              , brick_simple
+             , brick_simple_client
             ]},
   {env, []}
  ]}.
