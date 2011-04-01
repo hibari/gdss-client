@@ -486,17 +486,9 @@ do(Tab, OpList, OpFlags, Timeout)
     case find_the_brick(Tab, OpList) of
         brick_not_available = Err ->
             {txn_fail, [{0, Err}]};
-        Brick ->
+        {ServerName, Node}=Brick ->
             ?DBG_OPx({simple, do, Brick, OpList}),
-            case gen_server:call(Brick, {do, now(), OpList, OpFlags}, Timeout) of
-                %% These clauses are here as an aid of Dialyzer's type inference.
-                L when is_list(L) ->
-                    L;
-                {txn_fail, L} = Err when is_list(L) ->
-                    Err;
-                {wrong_brick, _} = Err2 ->
-                    Err2
-            end
+            brick_server:do(ServerName, Node, OpList, OpFlags, Timeout)
     end.
 
 %% @doc Get the global hash record (#g_hash_r{}) for table Tab from the
