@@ -60,11 +60,11 @@ init([]) ->
     %% Child_spec = [Name, {M, F, A},
     %%               Restart, Shutdown_time, Type, Modules_used]
 
-    BrickSimple =
-        {brick_simple, {brick_simple, start_link, []},
-         permanent, 2000, worker, [brick_simple]},
+    BrickSimpleClient =
+        {brick_simple_client, {brick_simple_client, start_link, []},
+         permanent, 2000, worker, [brick_simple_client]},
     {ok, {{rest_for_one, 3, 60}, [
-                                 BrickSimple
+                                 BrickSimpleClient
                                 ]}}.
 
 %%====================================================================
