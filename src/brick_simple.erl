@@ -42,29 +42,31 @@
 
 -include("brick_specs.hrl").
 
--spec add(table_name(), key(), val()) -> do1_res().
--spec add(table_name(), key(), val(), flags_list() | timeout()) -> do1_res().
--spec add(table_name(), key(), val(), exp_time(), flags_list(), timeout()) -> do1_res().
--spec replace(table_name(), key(), val_impl()) -> do1_res().
--spec replace(table_name(), key(), val_impl(), flags_list() | timeout()) -> do1_res().
--spec replace(table_name(), key(), val_impl(), exp_time(), flags_list(), timeout()) -> do1_res().
--spec set(table_name(), key(), val()) -> do1_res().
--spec set(table_name(), key(), val(), flags_list() | timeout()) -> do1_res().
--spec set(table_name(), key(), val(), exp_time(), flags_list(), timeout()) -> do1_res().
--spec rename(table_name(), key(), key()) -> do1_res().
--spec rename(table_name(), key(), key(), flags_list() | timeout()) -> do1_res().
--spec rename(table_name(), key(), key(), exp_time(), flags_list(), timeout()) -> do1_res().
--spec get(table_name(), key()) -> do1_res().
--spec get(table_name(), key(), flags_list() | timeout()) -> do1_res().
--spec get(table_name(), key(), flags_list(), timeout()) -> do1_res().
--spec delete(table_name(), key()) -> do1_res().
--spec delete(table_name(), key(), flags_list() | timeout()) -> do1_res().
--spec delete(table_name(), key(), flags_list(), timeout()) -> do1_res().
--spec get_many(table_name(), key(), integer()) -> do1_res().
--spec get_many(table_name(), key(), integer(), flags_list() | timeout()) -> do1_res().
--spec get_many(table_name(), key(), integer(), flags_list(), timeout()) -> do1_res().
+-type finite_timeout() :: non_neg_integer().
 
--spec do(atom(), do_op_list(), do_flags_list(), timeout()) -> do_res().
+-spec add(table_name(), key(), val()) -> do1_res().
+-spec add(table_name(), key(), val(), flags_list() | finite_timeout()) -> do1_res().
+-spec add(table_name(), key(), val(), exp_time(), flags_list(), finite_timeout()) -> do1_res().
+-spec replace(table_name(), key(), val_impl()) -> do1_res().
+-spec replace(table_name(), key(), val_impl(), flags_list() | finite_timeout()) -> do1_res().
+-spec replace(table_name(), key(), val_impl(), exp_time(), flags_list(), finite_timeout()) -> do1_res().
+-spec set(table_name(), key(), val()) -> do1_res().
+-spec set(table_name(), key(), val(), flags_list() | finite_timeout()) -> do1_res().
+-spec set(table_name(), key(), val(), exp_time(), flags_list(), finite_timeout()) -> do1_res().
+-spec rename(table_name(), key(), key()) -> do1_res().
+-spec rename(table_name(), key(), key(), flags_list() | finite_timeout()) -> do1_res().
+-spec rename(table_name(), key(), key(), exp_time(), flags_list(), finite_timeout()) -> do1_res().
+-spec get(table_name(), key()) -> do1_res().
+-spec get(table_name(), key(), flags_list() | finite_timeout()) -> do1_res().
+-spec get(table_name(), key(), flags_list(), finite_timeout()) -> do1_res().
+-spec delete(table_name(), key()) -> do1_res().
+-spec delete(table_name(), key(), flags_list() | finite_timeout()) -> do1_res().
+-spec delete(table_name(), key(), flags_list(), finite_timeout()) -> do1_res().
+-spec get_many(table_name(), key(), integer()) -> do1_res().
+-spec get_many(table_name(), key(), integer(), flags_list() | finite_timeout()) -> do1_res().
+-spec get_many(table_name(), key(), integer(), flags_list(), finite_timeout()) -> do1_res().
+
+-spec do(atom(), do_op_list(), do_flags_list(), finite_timeout()) -> do_res().
 
 
 %% @spec (atom(), io_list(), io_list())
@@ -75,7 +77,7 @@
 add(Tab, Key, Value) ->
     add(Tab, Key, Value, 0, [], ?FOO_TIMEOUT).
 
-%% @spec (atom(), io_list(), io_list(), prop_list() | timeout())
+%% @spec (atom(), io_list(), io_list(), prop_list() | finite_timeout())
 %%    -> zzz_add_reply()
 %% @equiv add(Tab, Key, Value, 0, Flags, DefaultTimeoutOrFlags)
 %% @doc Add a Key/Value pair to a brick, failing if Key already exists.
@@ -85,7 +87,7 @@ add(Tab, Key, Value, Flags) when is_list(Flags) ->
 add(Tab, Key, Value, Timeout) when is_integer(Timeout) ->
     add(Tab, Key, Value, 0, [], Timeout).
 
-%% @spec (atom(), io_list(), io_list(), integer(), prop_list(), timeout())
+%% @spec (atom(), io_list(), io_list(), integer(), prop_list(), finite_timeout())
 %%    -> zzz_add_reply()
 %% @doc Add a Key/Value pair to a brick, failing if Key already exists.
 
@@ -104,7 +106,7 @@ add(Tab, Key, Value, ExpTime, Flags, Timeout) ->
 replace(Tab, Key, Value) ->
     replace(Tab, Key, Value, 0, [], ?FOO_TIMEOUT).
 
-%% @spec (atom(), io_list(), io_list(), prop_list() | timeout())
+%% @spec (atom(), io_list(), io_list(), prop_list() | finite_timeout())
 %%    -> zzz_add_reply()
 %% @equiv replace(Tab, Key, Value, 0, Flags, DefaultTimeoutOrFlags)
 %% @doc Replace a Key/Value pair in a brick, failing if Key does not already exist.
@@ -114,7 +116,7 @@ replace(Tab, Key, Value, Flags) when is_list(Flags) ->
 replace(Tab, Key, Value, Timeout) when is_integer(Timeout) ->
     replace(Tab, Key, Value, 0, [], Timeout).
 
-%% @spec (atom(), io_list(), io_list(), integer(), prop_list(), timeout())
+%% @spec (atom(), io_list(), io_list(), integer(), prop_list(), finite_timeout())
 %%    -> zzz_add_reply()
 %% @doc Replace a Key/Value pair in a brick, failing if Key does not already exist.
 
@@ -133,7 +135,7 @@ replace(Tab, Key, Value, ExpTime, Flags, Timeout) ->
 set(Tab, Key, Value) ->
     set(Tab, Key, Value, 0, [], ?FOO_TIMEOUT).
 
-%% @spec (atom(), io_list(), io_list(), prop_list() | timeout())
+%% @spec (atom(), io_list(), io_list(), prop_list() | finite_timeout())
 %%    -> zzz_add_reply()
 %% @equiv set(Tab, Key, Value, 0, Flags, DefaultTimeoutOrFlags)
 %% @doc Add a Key/Value pair to a brick.
@@ -143,7 +145,7 @@ set(Tab, Key, Value, Flags) when is_list(Flags) ->
 set(Tab, Key, Value, Timeout) when is_integer(Timeout) ->
     set(Tab, Key, Value, 0, [], Timeout).
 
-%% @spec (atom(), io_list(), io_list(), integer(), prop_list(), timeout())
+%% @spec (atom(), io_list(), io_list(), integer(), prop_list(), finite_timeout())
 %%    -> zzz_add_reply()
 %% @doc Add a Key/Value pair to a brick.
 
@@ -163,7 +165,7 @@ set(Tab, Key, Value, ExpTime, Flags, Timeout) ->
 rename(Tab, Key, OldKey) ->
     rename(Tab, Key, OldKey, 0, [], ?FOO_TIMEOUT).
 
-%% @spec (atom(), io_list(), io_list(), prop_list() | timeout())
+%% @spec (atom(), io_list(), io_list(), prop_list() | finite_timeout())
 %%    -> zzz_add_reply()
 %% @equiv rename(Tab, Key, OldKey, 0, Flags, DefaultTimeoutOrFlags)
 %% @doc Rename a OldKey/Value pair to Key/Value pair in a brick,
@@ -174,7 +176,7 @@ rename(Tab, Key, OldKey, Flags) when is_list(Flags) ->
 rename(Tab, Key, OldKey, Timeout) when is_integer(Timeout) ->
     rename(Tab, Key, OldKey, 0, [], Timeout).
 
-%% @spec (atom(), io_list(), io_list(), integer(), prop_list(), timeout())
+%% @spec (atom(), io_list(), io_list(), integer(), prop_list(), finite_timeout())
 %%    -> zzz_add_reply()
 %% @doc Rename a OldKey/Value pair to Key/Value pair in a brick,
 %% failing if OldKey does not already exist or if Key already exists.
@@ -194,7 +196,7 @@ rename(Tab, Key, OldKey, ExpTime, Flags, Timeout) ->
 get(Tab, Key) ->
     get(Tab, Key, [], ?FOO_TIMEOUT).
 
-%% @spec (atom(), io_list(), prop_list() | timeout())
+%% @spec (atom(), io_list(), prop_list() | finite_timeout())
 %%    -> zzz_get_reply()
 %% @equiv get(Tab, Key, [], DefaultTimeoutOrFlags)
 %% @doc Get a Key/Value pair from a brick.
@@ -204,7 +206,7 @@ get(Tab, Key, Flags) when is_list(Flags) ->
 get(Tab, Key, Timeout) when is_integer(Timeout) ->
     get(Tab, Key, [], Timeout).
 
-%% @spec (atom(), io_list(), prop_list(), timeout())
+%% @spec (atom(), io_list(), prop_list(), finite_timeout())
 %%    -> zzz_get_reply()
 %% @doc Get a Key/Value pair from a brick.
 
@@ -222,7 +224,7 @@ get(Tab, Key, Flags, Timeout) ->
 delete(Tab, Key) ->
     delete(Tab, Key, [], ?FOO_TIMEOUT).
 
-%% @spec (atom(), io_list(), prop_list() | timeout())
+%% @spec (atom(), io_list(), prop_list() | finite_timeout())
 %%    -> zzz_delete_reply()
 %% @equiv delete(Tab, Key, [], DefaultTimeoutOrFlags)
 %% @doc Delete a Key/Value pair from a brick.
@@ -232,7 +234,7 @@ delete(Tab, Key, Flags) when is_list(Flags) ->
 delete(Tab, Key, Timeout) when is_integer(Timeout) ->
     delete(Tab, Key, [], Timeout).
 
-%% @spec (atom(), io_list(), prop_list(), timeout())
+%% @spec (atom(), io_list(), prop_list(), finite_timeout())
 %%    -> zzz_delete_reply()
 %% @doc Delete a Key/Value pair from a brick.
 
@@ -262,7 +264,7 @@ delete(Tab, Key, Flags, Timeout) ->
 get_many(Tab, Key, MaxNum) when is_integer(MaxNum) ->
     get_many(Tab, Key, MaxNum, [], ?FOO_TIMEOUT).
 
-%% @spec (atom(), io_list(), integer(), prop_list() | timeout())
+%% @spec (atom(), io_list(), integer(), prop_list() | finite_timeout())
 %%    -> zzz_getmany_reply()
 %% @equiv getmany(Tab, Key, MaxNum, [], DefaultTimeoutOrFlags)
 %% @doc Get many Key/Value pairs from a brick, up to MaxNum.
@@ -272,7 +274,7 @@ get_many(Tab, Key, MaxNum, Flags) when is_list(Flags) ->
 get_many(Tab, Key, MaxNum, Timeout) when is_integer(Timeout) ->
     get_many(Tab, Key, MaxNum, [], Timeout).
 
-%% @spec (atom(), io_list(), integer(), prop_list(), timeout())
+%% @spec (atom(), io_list(), integer(), prop_list(), finite_timeout())
 %%    -> zzz_getmany_reply()
 %% @doc Get many Key/Value pairs from a brick, up to MaxNum.
 
@@ -407,7 +409,7 @@ clear_table(Tab)
 do(Tab, OpList) ->
     do(Tab, OpList, [], ?FOO_TIMEOUT).
 
-%% @spec (atom(), do_list(), prop_list() | timeout())
+%% @spec (atom(), do_list(), prop_list() | finite_timeout())
 %%    -> zzz_do_reply() | {error, mumble(), mumble2()}
 %% @equiv do(Tab, OpList, [], DefaultTimeoutOrFlags)
 %% @doc Send a list of do ops to a brick.
@@ -416,7 +418,7 @@ do(Tab, OpList, Timeout)
   when is_list(OpList), is_integer(Timeout) ->
     do(Tab, OpList, [], Timeout).
 
-%% @spec (atom(), do_list(), prop_list(), timeout())
+%% @spec (atom(), do_list(), prop_list(), finite_timeout())
 %%    -> zzz_do_reply() | {txn_fail, list()} | {wrong_brick, term()}
 %% @doc Send a list of do ops to a brick.
 %%
