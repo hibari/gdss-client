@@ -30,6 +30,7 @@
              , brick_client_data_sup
              , brick_simple
              , brick_simple_client
+             , brick_simple_stub
             ]},
   {env, []}
  ]}.
