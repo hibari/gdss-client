@@ -599,10 +599,21 @@ do_req2(Tab, OpList, _OpFlags, Txn) ->
                   Res = case mnesia:read(KeyTab, Key, write) of
                             [] ->
                                 key_put(KeyTab, Key, TS, Val, Exp, Flags);
-                            [#key{ts=OldTS}] ->
+                            [#key{ts=OldTS, md5=OldMd5}] ->
                                 case proplists:get_value(testset, Flags, OldTS) of
                                     OldTS ->
-                                        key_put(KeyTab, Key, TS, Val, Exp, Flags);
+                                        if TS > OldTS ->
+                                                key_put(KeyTab, Key, TS, Val, Exp, Flags);
+                                           TS =:= OldTS ->
+                                                Md5 = crypto:md5(Val),
+                                                if Md5 =:= OldMd5 ->
+                                                        key_put(KeyTab, Key, TS, Md5, Val, Exp, Flags);
+                                                   true ->
+                                                        key_fail(Txn, N, {ts_error, OldTS})
+                                                end;
+                                           true ->
+                                                key_fail(Txn, N, {ts_error, OldTS})
+                                        end;
                                     _ ->
                                         key_fail(Txn, N, {ts_error, OldTS})
                                 end
@@ -612,10 +623,21 @@ do_req2(Tab, OpList, _OpFlags, Txn) ->
                   Res = case mnesia:read(KeyTab, Key, write) of
                             [] ->
                                 key_fail(Txn, N, key_not_exist);
-                            [#key{ts=OldTS}] ->
+                            [#key{ts=OldTS, md5=OldMd5}] ->
                                 case proplists:get_value(testset, Flags, OldTS) of
                                     OldTS ->
-                                        key_put(KeyTab, Key, TS, Val, Exp, Flags);
+                                        if TS > OldTS ->
+                                                key_put(KeyTab, Key, TS, Val, Exp, Flags);
+                                           TS =:= OldTS ->
+                                                Md5 = crypto:md5(Val),
+                                                if Md5 =:= OldMd5 ->
+                                                        key_put(KeyTab, Key, TS, Md5, Val, Exp, Flags);
+                                                   true ->
+                                                        key_fail(Txn, N, {ts_error, OldTS})
+                                                end;
+                                           true ->
+                                                key_fail(Txn, N, {ts_error, OldTS})
+                                        end;
                                     _ ->
                                         key_fail(Txn, N, {ts_error, OldTS})
                                 end
@@ -671,6 +693,9 @@ key_fail(_, _, Err) ->
 
 key_put(KeyTab, Key, TS, Val, Exp, Flags) ->
     Md5 = crypto:md5(Val),
+    key_put(KeyTab, Key, TS, Md5, Val, Exp, Flags).
+
+key_put(KeyTab, Key, TS, Md5, Val, Exp, Flags) ->
     Attrs = filter_attrs(Flags),
     K = #key{key=Key
              , ts=TS  %% TODO: server-side make_ts()
