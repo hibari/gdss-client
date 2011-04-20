@@ -229,8 +229,12 @@ find_the_brick(Tab, Key, ReadWrite) ->
             ReadWrite == write -> brick_server:make_delete(Key)
          end,
     {ok, _, GH} = get_gh(Tab),
-    {[Brick], _, _} = brick_server:extract_do_list_keys_find_bricks([Do], GH),
-    Brick.
+    case brick_server:extract_do_list_keys_find_bricks([Do], GH) of
+        {[{_, _}=Brick], _, _} ->
+            Brick;
+        _ ->
+            brick_not_available
+    end.
 
 %%====================================================================
 %% API
@@ -395,9 +399,12 @@ find_the_brick_loop(Tab, DoList, N) ->
         after 5000 ->
                 exit({timeout, brick_simple_server})
         end,
-        {[Brick], _, _} =
-            brick_server:extract_do_list_keys_find_bricks(DoList, GH),
-        Brick
+        case brick_server:extract_do_list_keys_find_bricks(DoList, GH) of
+            {[{_, _}=Brick], _, _} ->
+                Brick;
+            _ ->
+                brick_not_available
+        end
     catch
         _X:_Y ->
             brick_not_available
