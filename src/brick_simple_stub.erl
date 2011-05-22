@@ -22,7 +22,7 @@
 %% bricks.  This stub should not be started in a production
 %% environment.  This stub can be started and stopped at any time.
 %% The real brick_simple_client is shutdown when this stub is running
-%% and is restarted after this this stub is stopped.
+%% and is restarted after this stub is stopped.
 
 -module(brick_simple_stub).
 
@@ -35,9 +35,6 @@
 %% API for brick_simple_client
 -export([do/4, fold_table/7]).
 
-%% API for start_link_table_subscriber and loop_table_subscriber
--export([start_link_table_subscriber/1, loop_table_subscriber/6]).
-
 -define(MOCK_MOD, brick_simple_client).
 
 
@@ -48,7 +45,6 @@
 -type attr() :: atom() | {term(), term()}.
 -type attrlist() :: [attr()].
 -type cnt() :: non_neg_integer().
--type from() :: {pid(),reference()}.
 -type key() :: binary() | iolist().
 -type len() :: non_neg_integer().
 -type ng() :: key_not_exist | {key_exists, ts()} | {ts_error, ts()} | invalid_flag_present | invalid_op_present.
@@ -58,6 +54,7 @@
 -type time_t() :: non_neg_integer().   %% UNIX time_t
 -type ts() :: non_neg_integer().       %% now() usecs
 -type val() :: binary() | iolist().
+
 
 %%====================================================================
 %% Types - external
@@ -177,13 +174,7 @@
 -record(succ, {result = undefined :: ok()}).
 -record(fail, {reason = undefined :: ng()}).
 
--type ops() :: [op() | #succ{} | #fail{} ].
-
--record(do, {
-          ts = 0 :: ts(),
-          ops = [] :: ops(),
-          from = undefined :: undefined | from()
-         }).
+-type ops() :: [op() | #succ{} | #fail{}].
 
 
 %%====================================================================
@@ -263,19 +254,14 @@ delete_module() ->
 %%====================================================================
 
 create_tables(Tab) ->
-    ok = stop_table_subscriber(Tab),
     ok = create_table_key(Tab),
-    ok = create_table_do(Tab),
     ok = create_table_md5val(Tab),
     ok = create_table_md5cnt(Tab),
-    ok = start_table_subscriber(Tab),
     ok = wait_for_tables(Tab),
     ok.
 
 delete_tables(Tab) ->
-    ok = stop_table_subscriber(Tab),
     ok = delete_table_key(Tab),
-    ok = delete_table_do(Tab),
     ok = delete_table_md5val(Tab),
     ok = delete_table_md5cnt(Tab),
     ok.
@@ -283,7 +269,6 @@ delete_tables(Tab) ->
 clear_tables(Tab) ->
     %% NOTE: non-atomic
     ok = clear_table_key(Tab),
-    ok = clear_table_do(Tab),
     ok = clear_table_md5val(Tab),
     ok = clear_table_md5cnt(Tab),
     ok.
@@ -295,14 +280,6 @@ create_table_key(Tab) ->
             {record_name, key},
             {attributes, record_info(fields, key)}],
     %% DISABLE ... very slow {index, [exp]}],
-    do_create_table(MTab, Opts).
-
-create_table_do(Tab) ->
-    MTab = table_do(Tab),
-    Opts = [{type, ordered_set},
-            {ram_copies, [node()]},
-            {record_name, do},
-            {attributes, record_info(fields, do)}],
     do_create_table(MTab, Opts).
 
 create_table_md5val(Tab) ->
@@ -330,10 +307,6 @@ delete_table_key(Tab) ->
     MTab = table_key(Tab),
     do_delete_table(MTab).
 
-delete_table_do(Tab) ->
-    MTab = table_do(Tab),
-    do_delete_table(MTab).
-
 delete_table_md5val(Tab) ->
     MTab = table_md5val(Tab),
     do_delete_table(MTab).
@@ -354,10 +327,6 @@ clear_table_key(Tab) ->
     MTab = table_key(Tab),
     do_clear_table(MTab).
 
-clear_table_do(Tab) ->
-    MTab = table_do(Tab),
-    do_clear_table(MTab).
-
 clear_table_md5val(Tab) ->
     MTab = table_md5val(Tab),
     do_clear_table(MTab).
@@ -371,10 +340,7 @@ do_clear_table(MTab) ->
     ok.
 
 table_key(Tab) ->
-    table(Tab, "_key").
-
-table_do(Tab) ->
-    table(Tab, "_do").
+    Tab.
 
 table_md5val(Tab) ->
     table(Tab, "_md5val").
@@ -386,7 +352,7 @@ table(Tab, Type) ->
     list_to_atom(atom_to_list(Tab) ++ Type).
 
 tables(Tab) ->
-    [table_key(Tab), table_do(Tab), table_md5val(Tab), table_md5cnt(Tab)].
+    [table_key(Tab), table_md5val(Tab), table_md5cnt(Tab)].
 
 wait_for_tables(Tab) ->
     %% NOTE: hard-coded timeout for wait for tables
@@ -395,118 +361,24 @@ wait_for_tables(Tab) ->
 
 
 %%====================================================================
-%% Internal - subscriber
-%%====================================================================
-
-start_table_subscriber(Tab) ->
-    ChildSpec = {Tab, {?MODULE, start_link_table_subscriber, [Tab]},
-                 temporary, 2000, worker, [?MODULE]},
-    case supervisor:start_child(brick_client_data_sup, ChildSpec) of
-        {ok, _Pid} ->
-            ok
-    end.
-
-start_link_table_subscriber(Tab) ->
-    Caller = self(),
-    From = {Caller, make_ref()},
-    Fun = fun() ->
-                  DoTab = table_do(Tab),
-                  Md5valTab = table_md5val(Tab),
-                  Md5cntTab = table_md5cnt(Tab),
-                  mnesia:subscribe({table, DoTab, simple}),
-                  Caller ! {From, ok},
-                  %% @TODO - restore blobs and last "valid" timestamp
-                  %% from disk storage
-                  %% @TODO - restore mnesia index to same state as
-                  %% disk storage
-                  NowTS = make_ts(),
-                  loop_table_subscriber(Tab, DoTab, Md5valTab, Md5cntTab, NowTS, NowTS)
-          end,
-    Pid = proc_lib:spawn_link(Fun),
-    receive
-        {From, ok} ->
-            {ok, Pid}
-    after 5000 ->
-            %% NOTE: hard-coded timeout
-            exit(timeout)
-    end.
-
-stop_table_subscriber(Tab) ->
-    case supervisor:terminate_child(brick_client_data_sup, Tab) of
-        ok ->
-            ok;
-        {error, not_found} ->
-            ok
-    end,
-    case supervisor:delete_child(brick_client_data_sup, Tab) of
-        ok ->
-            ok;
-        {error, not_found} ->
-            ok
-    end,
-    ok.
-
-loop_table_subscriber(Tab, DoTab, Md5valTab, Md5cntTab, LastTS, MaxTS) ->
-    %% @TODO - sync storage on disk before sending reply to caller
-    %% @TODO - squid-like "disk priming" for reading values on disk
-    %% @TODO - background scavenger-like processing that respects
-    %%         LastTS and MaxTS
-    receive
-        {mnesia_table_event,
-         {write, {DoTab, NewTS, Ops, {Caller,_}=From}, _ActivityId}} = _Event ->
-            %% DEBUG io:format("pre-event(~p): ~p -> ~p~n", [Tab, _ActivityId, From]),
-            Reply = do_res(Tab, DoTab, Md5valTab, Md5cntTab, NewTS, Ops),
-            %% DEBUG io:format("post-event(~p): ~p -> ~p ~p~n", [Tab, _ActivityId, From, Reply]),
-            Caller ! {From, Reply},
-            NewMaxTS = erlang:max(MaxTS, NewTS),
-            ?MODULE:loop_table_subscriber(Tab, DoTab, Md5valTab, Md5cntTab, NewTS, NewMaxTS);
-        {mnesia_table_event,
-         {delete_object, _OldRecord, _ActivityId}} = _Event ->
-            %% DEBUG io:format("event(~p): ~p~n", [Tab, _Event]),
-            ?MODULE:loop_table_subscriber(Tab, DoTab, Md5valTab, Md5cntTab, LastTS, MaxTS);
-        {mnesia_table_event,
-         {delete, {DoTab, _Key}, _ActivityId}} = _Event ->
-            %% DEBUG io:format("event(~p): ~p~n", [Tab, _Event]),
-            ?MODULE:loop_table_subscriber(Tab, DoTab, Md5valTab, Md5cntTab, LastTS, MaxTS);
-        %% schema table
-        {mnesia_table_event,
-         {write, {schema, DoTab, _}, _ActivityId}} = _Event ->
-            %% DEBUG io:format("event(~p): ~p~n", [Tab, _Event]),
-            ?MODULE:loop_table_subscriber(Tab, DoTab, Md5valTab, Md5cntTab, LastTS, MaxTS);
-        {mnesia_table_event,
-         {delete, {schema, DoTab}, _ActivityId}} = _Event ->
-            %% DEBUG io:format("event(~p): ~p~n", [Tab, _Event]),
-            ?MODULE:loop_table_subscriber(Tab, DoTab, Md5valTab, Md5cntTab, LastTS, MaxTS);
-        Event ->
-            %% DEBUG io:format("event(~p): ~p~n", [Tab, Event]),
-            exit({Tab, unknown, Event})
-    end.
-
-
-%%====================================================================
 %% Internal - stub implementation
 %%====================================================================
 
 -spec do(table(), oplist(), opflags(), timeout()) -> replylist() | {txn_fail, list()}.
 %% @doc Send a list of do operations to a table
-do(Tab, OpList, OpFlags, Timeout) ->
+do(Tab, OpList, OpFlags, _Timeout) ->
     WO = lists:any(fun is_write_op/1, OpList),
-    RO = lists:any(fun is_read_op/1, OpList),
-    Caller = self(),
-    From = {Caller, make_ref()},
-    Txn = fun() -> do_req(From, Tab, OpList, OpFlags) end,
+    KeyTab = table_key(Tab),
+    Md5ValTab = table_md5val(Tab),
+    Md5CntTab = table_md5cnt(Tab),
+    Txn = fun() ->
+                  RevOpList = do_req(KeyTab, OpList, OpFlags),
+                  do_res(Md5ValTab, Md5CntTab, RevOpList)
+          end,
     if WO ->
             case mnesia:transaction(Txn) of
-                {atomic, ok} ->
-                    %% DEBUG io:format("receive(~p) transaction -> ~p~n", [Tab, From]),
-                    receive
-                        {From, Reply} ->
-                            filter_reply(Reply)
-                    after Timeout ->
-                            exit(timeout)
-                    end;
-                {atomic, Reply} when is_list(Reply) ->
-                    filter_reply(Reply);
+                {atomic, Reply} ->
+                    format_reply(Reply);
                 {aborted, timeout} ->
                     exit(timeout);
                 {aborted, Reason} ->
@@ -517,18 +389,10 @@ do(Tab, OpList, OpFlags, Timeout) ->
                             {txn_fail, [Reason]}
                     end
             end;
-       RO ->
+       true ->
             try mnesia:async_dirty(Txn) of
-                ok ->
-                    %% DEBUG io:format("receive(~p) dirty -> ~p~n", [Tab, From]),
-                    receive
-                        {From, Reply} ->
-                            filter_reply(Reply)
-                    after Timeout ->
-                            exit(timeout)
-                    end;
-                Reply when is_list(Reply) ->
-                    filter_reply(Reply)
+                Reply ->
+                    format_reply(Reply)
             catch
                 exit:timeout ->
                     exit(timeout);
@@ -546,9 +410,7 @@ do(Tab, OpList, OpFlags, Timeout) ->
                         _ ->
                             {txn_fail, [Reason]}
                     end
-            end;
-       true ->
-            {txn_fail, [{0,invalid_op_present}]}
+            end
     end.
 
 is_write_op({add, _Key, _TS, _Val, _Exp, _Flags}) -> true;
@@ -557,36 +419,24 @@ is_write_op({replace, _Key, _TS, _Val, _Exp, _Flags}) -> true;
 is_write_op({delete, _Key, _Flags}) -> true;
 is_write_op(_) -> false.
 
-is_read_op({get, _Key, _Flags}) -> true;
-is_read_op({get_many, _Key, _Flags}) -> true;
-is_read_op(_) -> false.
+%%is_read_op({get, _Key, _Flags}) -> true;
+%%is_read_op({get_many, _Key, _Flags}) -> true;
+%%is_read_op(_) -> false.
 
 
 %%====================================================================
 %% Internal - stub request
 %%====================================================================
 
--spec do_req(from(), table(), oplist(), opflags()) -> ok | replylist().
+-spec do_req(table(), oplist(), opflags()) -> replylist().
 %% @doc Execute a list of do operations
-do_req(From, Tab, [txn|OpList], OpFlags) ->
-    do_req1(From, Tab, OpList, OpFlags, true);
-do_req(From, Tab, OpList, OpFlags) ->
-    do_req1(From, Tab, OpList, OpFlags, false).
+do_req(Tab, [txn|OpList], OpFlags) ->
+    do_req1(Tab, OpList, OpFlags, true);
+do_req(Tab, OpList, OpFlags) ->
+    do_req1(Tab, OpList, OpFlags, false).
 
--spec do_req1(from(), table(), oplist(), opflags(), boolean()) -> ok | replylist().
-do_req1(From, Tab, OpList, _OpFlags, Txn) ->
-    case do_req2(Tab, OpList, _OpFlags, Txn) of
-        {true, ReplyList} ->
-            ReplyList;
-        {false, Ops} ->
-            DoTab = table_do(Tab),
-            Do = #do{ts=make_ts(), from=From, ops=Ops},
-            mnesia:write(DoTab, Do, write)
-    end.
-
--spec do_req2(table(), oplist(), opflags(), boolean()) -> {boolean(), ops()}.
-do_req2(Tab, OpList, _OpFlags, Txn) ->
-    KeyTab = table_key(Tab),
+-spec do_req1(table(), oplist(), opflags(), boolean()) -> ops().
+do_req1(KeyTab, OpList, _OpFlags, Txn) ->
     Fun = fun({add, Key, TS, Val, Exp, Flags}, {IsSync,N,Acc}) ->
                   Res = case mnesia:read(KeyTab, Key) of
                             [] ->
@@ -676,8 +526,8 @@ do_req2(Tab, OpList, _OpFlags, Txn) ->
                   Res = key_fail(Txn, N, invalid_op_present),
                   {is_sync(IsSync,Res),N+1,[Res|Acc]}
           end,
-    {IsSync,_N,ReplyList} = lists:foldl(Fun, {true,1,[]}, OpList),
-    {IsSync,lists:reverse(ReplyList)}.
+    {_IsSync,_N,RevOpList} = lists:foldl(Fun, {true,1,[]}, OpList),
+    RevOpList.
 
 is_sync(false, _) ->
     false;
@@ -808,54 +658,45 @@ filter_attrs(Flags) ->
          (_)                  -> false
       end, Flags).
 
+
 %%====================================================================
 %% Internal - stub response
 %%====================================================================
 
--spec do_res(table(), table(), table(), table(), ts(), ops()) -> ok.
-%% @doc Execute a list of do operations
-do_res(_Tab, DoTab, Md5valTab, Md5cntTab, TS, Ops) ->
-    Txn =  fun() ->
-                   Reply = lists:map(
-                             fun(Succ) when is_record(Succ, succ) ->
-                                     Succ;
-                                (Fail) when is_record(Fail, fail) ->
-                                     Fail;
-                                (#put{val=#val{key=#key{md5=Md5}, val=Val}}=Put) ->
-                                     %% NOTE: Only reading from the
-                                     %% count table is sufficient
-                                     case mnesia:dirty_read(Md5cntTab, Md5) of
-                                         [] ->
-                                             ok = mnesia:dirty_write(Md5valTab, #md5val{md5=Md5, val=Val});
-                                         [_] ->
-                                             noop
-                                     end,
-                                     mnesia:dirty_update_counter(Md5cntTab, Md5, 1),
-                                     Put;
-                                (#del{key=#key{md5=Md5}}=Del) ->
-                                     mnesia:dirty_update_counter(Md5cntTab, Md5, -1),
-                                     Del;
-                                (#getkey{}=GetKey) ->
-                                     GetKey;
-                                (#getval{val=#val{key=#key{md5=Md5}}=V}=GetVal) ->
-                                     [#md5val{val=Val}] = mnesia:dirty_read(Md5valTab, Md5),
-                                     GetVal#getval{val=V#val{val=Val}};
-                                (#getkeys{}=GetKeys) ->
-                                     GetKeys;
-                                (#getvals{vals=Vs}=GetVals) ->
-                                     NewVs = lists:map(
-                                               fun(#val{key=#key{md5=Md5}}=V) ->
-                                                       [#md5val{val=Val}] = mnesia:dirty_read(Md5valTab, Md5),
-                                                       V#val{val=Val}
-                                               end, Vs),
-                                     GetVals#getvals{vals=NewVs}
-                             end, Ops),
-                   ok = mnesia:dirty_delete(DoTab, TS),
-                   Reply
-           end,
-    mnesia:async_dirty(Txn).
+do_res(Md5ValTab, Md5CntTab, RevOps) ->
+    Fun = fun(Succ, Acc) when is_record(Succ, succ) ->
+                  [Succ|Acc];
+             (Fail, Acc) when is_record(Fail, fail) ->
+                  [Fail|Acc];
+             (#put{val=#val{key=#key{md5=Md5}, val=Val}}=Put, Acc) ->
+                  case mnesia:dirty_update_counter(Md5CntTab, Md5, 1) of
+                      1 ->
+                          ok = mnesia:dirty_write(Md5ValTab, #md5val{md5=Md5, val=Val});
+                      _ ->
+                          noop
+                  end,
+                  [Put|Acc];
+             (#del{key=#key{md5=Md5}}=Del, Acc) ->
+                  mnesia:dirty_update_counter(Md5CntTab, Md5, -1),
+                  [Del|Acc];
+             (#getkey{}=GetKey, Acc) ->
+                  [GetKey|Acc];
+             (#getval{val=#val{key=#key{md5=Md5}}=V}=GetVal, Acc) ->
+                  [#md5val{val=Val}] = mnesia:dirty_read(Md5ValTab, Md5),
+                  [GetVal#getval{val=V#val{val=Val}}|Acc];
+             (#getkeys{}=GetKeys, Acc) ->
+                  [GetKeys|Acc];
+             (#getvals{vals=Vs}=GetVals, Acc) ->
+                  NewVs = lists:map(
+                            fun(#val{key=#key{md5=Md5}}=V) ->
+                                    [#md5val{val=Val}] = mnesia:dirty_read(Md5ValTab, Md5),
+                                    V#val{val=Val}
+                            end, Vs),
+                  [GetVals#getvals{vals=NewVs}|Acc]
+          end,
+    lists:foldl(Fun, [], RevOps).
 
-filter_reply(Reply) ->
+format_reply(Reply) ->
     lists:map(
       fun(#succ{result=Succ}) ->
               Succ;
@@ -890,13 +731,13 @@ filter_reply(Reply) ->
 %% Internal - stub timestamps and now
 %%====================================================================
 
+-ifdef(UNUSED).
 -spec make_ts() -> ts().
 %% @doc Create a timestamp based on the current time (erlang:now()).
 make_ts() ->
     {MSec, Sec, USec} = now(),
     (MSec * 1000000 * 1000000) + (Sec * 1000000) + USec.
 
--ifdef(UNUSED).
 -spec make_now(ts()) -> now().
 %% @doc Convert a timestamp from make_ts/1 back into erlang:now()
 %% format.
