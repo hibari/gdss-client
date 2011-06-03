@@ -47,7 +47,7 @@
 -type cnt() :: non_neg_integer().
 -type key() :: binary() | iolist().
 -type len() :: non_neg_integer().
--type ng() :: key_not_exist | {key_exists, ts()} | {ts_error, ts()} | invalid_flag_present | invalid_op_present.
+-type ng() :: key_not_exist | {key_exists, ts()} | {ts_error, ts()} | {val_error, len()} | invalid_flag_present | invalid_op_present.
 %% -type now() :: {non_neg_integer(), non_neg_integer(), non_neg_integer()}.
 -type md5() :: binary() | iolist().
 -type table() :: atom().
