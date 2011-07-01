@@ -388,18 +388,11 @@ fold_key_prefix2({ok, {Rs, Bool}}, GetFun, Tab, Key, Fun, Acc,
 fold_key_prefix2(Err, _GetFun, _Tab, _Key, _Fun, Acc, _SleepTime, Iters) ->
     {error, Err, Acc, Iters}.
 
-%% @spec (atom()) -> ok.
+%% @spec (atom()) -> ok | term().
 %% @doc Delete all keys in a table.
-%%
-clear_table(Tab)
-  when is_atom(Tab) ->
-    Fun = fun({K,_TS}, _Acc) -> ok = brick_simple:delete(Tab, K) end,
-    case brick_simple:fold_key_prefix(Tab, <<>>, Fun, ok, [witness]) of
-        {ok,ok,_} ->
-            ok;
-        {error,_Err,_,_} ->
-            clear_table(Tab)
-    end.
+clear_table(Tab) when is_atom(Tab) ->
+    Fun = fun({_Ch, {K,_TS}}, _Acc) -> ok = brick_simple:delete(Tab, K) end,
+    catch brick_simple:fold_table(Tab, Fun, ok, 1000, [witness]).
 
 %% @spec (atom(), do_list())
 %%    -> zzz_do_reply() | {error, mumble(), mumble2()}
