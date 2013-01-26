@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2011 Gemini Mobile Technologies, Inc.  All rights reserved.
+%%% Copyright (c) 2011-2013 Hibari developers.  All rights reserved.
 %%%
 %%% Licensed under the Apache License, Version 2.0 (the "License");
 %%% you may not use this file except in compliance with the License.
@@ -233,8 +233,8 @@ stop_main() ->
 
 install_module() ->
     ok = delete_module(),
-    Forms = meck:abstract_code(meck:beam_file(?MODULE)),
-    ok = meck:compile_forms(meck:rename_module(Forms, ?MOCK_MOD), meck:compile_options(?MODULE)),
+    Forms = meck_mod:abstract_code(meck_mod:beam_file(?MODULE)),
+    ok = meck_mod:compile_and_load_forms(meck_mod:rename_module(Forms, ?MOCK_MOD), meck_mod:compile_options(?MODULE)),
     ok.
 
 uninstall_module() ->
