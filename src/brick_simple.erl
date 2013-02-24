@@ -158,31 +158,31 @@ set(Tab, Key, Value, ExpTime, Flags, Timeout) ->
 
 %% @spec (atom(), io_list(), io_list())
 %%    -> zzz_add_reply()
-%% @equiv rename(Tab, Key, OldKey, 0, [], DefaultTimeout)
-%% @doc Rename a OldKey/Value pair to Key/Value pair in a brick,
-%% failing if OldKey does not already exist or if Key already exists.
+%% @equiv rename(Tab, Key, NewKey, 0, [], DefaultTimeout)
+%% @doc Rename a Key/Value pair to NewKey/Value pair in a brick,
+%% failing if Key does not already exist.
 
-rename(Tab, Key, OldKey) ->
-    rename(Tab, Key, OldKey, 0, [], ?FOO_TIMEOUT).
+rename(Tab, Key, NewKey) ->
+    rename(Tab, Key, NewKey, 0, [], ?FOO_TIMEOUT).
 
 %% @spec (atom(), io_list(), io_list(), prop_list() | finite_timeout())
 %%    -> zzz_add_reply()
-%% @equiv rename(Tab, Key, OldKey, 0, Flags, DefaultTimeoutOrFlags)
-%% @doc Rename a OldKey/Value pair to Key/Value pair in a brick,
-%% failing if OldKey does not already exist or if Key already exists.
+%% @equiv rename(Tab, Key, NewKey, 0, Flags, DefaultTimeoutOrFlags)
+%% @doc Rename a Key/Value pair to NewKey/Value pair in a brick,
+%% failing if Key does not already exist.
 
-rename(Tab, Key, OldKey, Flags) when is_list(Flags) ->
-    rename(Tab, Key, OldKey, 0, Flags, ?FOO_TIMEOUT);
-rename(Tab, Key, OldKey, Timeout) when is_integer(Timeout) ->
-    rename(Tab, Key, OldKey, 0, [], Timeout).
+rename(Tab, Key, NewKey, Flags) when is_list(Flags) ->
+    rename(Tab, Key, NewKey, 0, Flags, ?FOO_TIMEOUT);
+rename(Tab, Key, NewKey, Timeout) when is_integer(Timeout) ->
+    rename(Tab, Key, NewKey, 0, [], Timeout).
 
 %% @spec (atom(), io_list(), io_list(), integer(), prop_list(), finite_timeout())
 %%    -> zzz_add_reply()
-%% @doc Rename a OldKey/Value pair to Key/Value pair in a brick,
-%% failing if OldKey does not already exist or if Key already exists.
+%% @doc Rename a Key/Value pair to NewKey/Value pair in a brick,
+%% failing if Key does not already exist.
 
-rename(Tab, Key, OldKey, ExpTime, Flags, Timeout) ->
-    case do(Tab,[brick_server:make_rename(Key, OldKey, ExpTime, Flags)],
+rename(Tab, Key, NewKey, ExpTime, Flags, Timeout) ->
+    case do(Tab,[brick_server:make_rename(Key, NewKey, ExpTime, Flags)],
             Timeout) of
         [Res] -> Res;
         Else  -> Else
