@@ -21,7 +21,9 @@
 
 {application, gdss_client,
  [
-  {description, "Gemini Distributed Storage Service, Client"},
+  %% NOTE: GDSS stands for Gemini Distributed Storage Service, which is
+  %%       the predecessor of Hibari
+  {description, "Hibari Client"},
   {vsn, "0.3.0"},
   {registered, []},
   {applications, [kernel, stdlib, sasl]},
