@@ -455,7 +455,7 @@ do_req1(KeyTab, OpList, _OpFlags, Txn) ->
                                         if TS > OldTS ->
                                                 key_put(KeyTab, Key, TS, Val, Exp, Flags);
                                            TS =:= OldTS ->
-                                                Md5 = crypto:md5(Val),
+                                                Md5 = crypto:hash(md5, Val),
                                                 if Md5 =:= OldMd5 ->
                                                         key_put(KeyTab, Key, TS, Md5, Val, Exp, Flags);
                                                    true ->
@@ -479,7 +479,7 @@ do_req1(KeyTab, OpList, _OpFlags, Txn) ->
                                         if TS > OldTS ->
                                                 key_put(KeyTab, Key, TS, Val, Exp, Flags);
                                            TS =:= OldTS ->
-                                                Md5 = crypto:md5(Val),
+                                                Md5 = crypto:hash(md5, Val),
                                                 if Md5 =:= OldMd5 ->
                                                         key_put(KeyTab, Key, TS, Md5, Val, Exp, Flags);
                                                    true ->
@@ -542,7 +542,7 @@ key_fail(_, _, Err) ->
     #fail{reason=Err}.
 
 key_put(KeyTab, Key, TS, Val, Exp, Flags) ->
-    Md5 = crypto:md5(Val),
+    Md5 = crypto:hash(md5, Val),
     key_put(KeyTab, Key, TS, Md5, Val, Exp, Flags).
 
 key_put(KeyTab, Key, TS, Md5, Val, Exp, Flags) ->
