@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2007-2013 Hibari developers.  All rights reserved.
+%%% Copyright (c) 2007-2015 Hibari developers.  All rights reserved.
 %%%
 %%% Licensed under the Apache License, Version 2.0 (the "License");
 %%% you may not use this file except in compliance with the License.
@@ -228,11 +228,15 @@ find_the_brick(Tab, Key, ReadWrite) ->
     Do = if ReadWrite == read  -> brick_server:make_get(Key);
             ReadWrite == write -> brick_server:make_delete(Key)
          end,
-    {ok, _, GH} = get_gh(Tab),
-    case brick_server:extract_do_list_keys_find_bricks([Do], GH) of
-        {[{_, _}=Brick], _, _} ->
-            Brick;
-        _ ->
+    case get_gh(Tab) of
+        {ok, _, GH} ->
+            case brick_server:extract_do_list_keys_find_bricks([Do], GH) of
+                {[{_, _}=Brick], _, _} ->
+                    Brick;
+                _ ->
+                    brick_not_available
+            end;
+        _Err ->
             brick_not_available
     end.
 
