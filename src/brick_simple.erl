@@ -372,19 +372,17 @@ fold_key_prefix(Tab, Prefix, StartKey, Fun, Acc, Flags0, NumItems,
     fold_key_prefix2(GetFun(StartKey), GetFun, Tab, StartKey, Fun, Acc,
                      SleepTime, 1).
 
-fold_key_prefix2({ok, {Rs, Bool}}, GetFun, Tab, Key, Fun, Acc,
-                 SleepTime, Iters) ->
+fold_key_prefix2({ok, {Rs, true}}, GetFun, Tab, Key, Fun, Acc, SleepTime, Iters) ->
     Acc2 = lists:foldl(Fun, Acc, Rs),
-    if Bool == false ->
-            {ok, Acc2, Iters};
-       true ->
-            LastKey = if Rs == [] -> Key;
-                         true     -> element(1, lists:last(Rs))
-                      end,
-            timer:sleep(SleepTime),
-            fold_key_prefix2(GetFun(LastKey), GetFun, Tab, Key, Fun, Acc2,
-                             SleepTime, Iters+1)
-    end;
+    LastKey = if
+                  Rs =:= [] -> Key;
+                  true      -> element(1, lists:last(Rs))
+              end,
+    timer:sleep(SleepTime),
+    fold_key_prefix2(GetFun(LastKey), GetFun, Tab, Key, Fun, Acc2, SleepTime, Iters + 1);
+fold_key_prefix2({ok, {Rs, false}}, _GetFun, _Tab, _Key, Fun, Acc, _SleepTime, Iters) ->
+    Acc2 = lists:foldl(Fun, Acc, Rs),
+    {ok, Acc2, Iters};
 fold_key_prefix2(Err, _GetFun, _Tab, _Key, _Fun, Acc, _SleepTime, Iters) ->
     {error, Err, Acc, Iters}.
 
