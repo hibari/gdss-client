@@ -52,7 +52,7 @@
 -type md5() :: binary() | iolist().
 -type table() :: atom().
 -type time_t() :: non_neg_integer().   %% UNIX time_t
--type ts() :: non_neg_integer().       %% now() usecs
+-type ts() :: non_neg_integer().       %% erlang:timestamp() usecs
 -type val() :: binary() | iolist().
 
 
@@ -733,19 +733,16 @@ format_reply(Reply) ->
 
 -ifdef(UNUSED).
 -spec make_ts() -> ts().
-%% @doc Create a timestamp based on the current time (erlang:now()).
+%% @doc Create a micro-second resolution timestamp based on the current time.
 make_ts() ->
-    {MSec, Sec, USec} = now(),
-    (MSec * 1000000 * 1000000) + (Sec * 1000000) + USec.
+    gmt_time_otp18:erlang_system_time(micro_seconds).
 
 -spec make_now(ts()) -> now().
-%% @doc Convert a timestamp from make_ts/1 back into erlang:now()
-%% format.
+%% @doc Convert a micro-second resolution timestamp from make_ts/1
+%% back into erlang:timestamp() format.
 make_now(Ts) ->
-    MSec = Ts div (1000000 * 1000000),
-    MTs = Ts rem (1000000 * 1000000),
-    Sec = MTs div 1000000,
-    STs = MTs rem 1000000,
-    USec = STs,
-    {MSec, Sec, USec}.
+    MegaSecs = Ts div (1000000 * 1000000),
+    Secs = Ts div 1000000 - MegaSecs * 1000000,
+    MicroSecs = Ts rem 1000000,
+    {MegaSecs, Secs, MicroSecs}.
 -endif. %% -ifdef(UNUSED).
